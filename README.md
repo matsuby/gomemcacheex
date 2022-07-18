@@ -1,5 +1,7 @@
 # gomemcacheex
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/matsuby/gomemcacheex.svg)](https://pkg.go.dev/github.com/matsuby/gomemcacheex)
+
 ## About
 gomemcacheex povides wrapper for [Go memcached client (bradfitz/gomemcache)](https://github.com/bradfitz/gomemcache) that name `ClientWrapper`.
 
