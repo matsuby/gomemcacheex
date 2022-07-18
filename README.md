@@ -5,7 +5,7 @@ gomemcacheex povides wrapper for [Go memcached client (bradfitz/gomemcache)](htt
 
 `ClientWrapper` can register callback functions for each methods(`Get`, `Set`, `Delete`, etc) similar to [GORM](https://gorm.io/docs/write_plugins.html).
 
-## Installing(TODO)
+## Installing
 ```
 go get github.com/matsuby/gomemcacheex
 ```
