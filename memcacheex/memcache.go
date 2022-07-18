@@ -41,6 +41,8 @@ func (cw *ClientWrapper) FlushAll() error {
 	return err
 }
 
+// Get gets the item for the given key. ErrCacheMiss is returned for a
+// memcache cache miss. The key must be at most 250 bytes in length.
 func (cw *ClientWrapper) Get(key string) (*memcache.Item, error) {
 	for _, cb := range cw.registry.get.befores {
 		cb.fn([]any{key}, nil)
@@ -52,6 +54,11 @@ func (cw *ClientWrapper) Get(key string) (*memcache.Item, error) {
 	return item, err
 }
 
+// Touch updates the expiry for the given key. The seconds parameter is either
+// a Unix timestamp or, if seconds is less than 1 month, the number of seconds
+// into the future at which time the item will expire. Zero means the item has
+// no expiration time. ErrCacheMiss is returned if the key is not in the cache.
+// The key must be at most 250 bytes in length.
 func (cw *ClientWrapper) Touch(key string, seconds int32) error {
 	for _, cb := range cw.registry.touch.befores {
 		cb.fn([]any{key, seconds}, nil)
@@ -63,6 +70,10 @@ func (cw *ClientWrapper) Touch(key string, seconds int32) error {
 	return err
 }
 
+// GetMulti is a batch version of Get. The returned map from keys to
+// items may have fewer elements than the input slice, due to memcache
+// cache misses. Each key must be at most 250 bytes in length.
+// If no error is returned, the returned map will also be non-nil.
 func (cw *ClientWrapper) GetMulti(keys []string) (map[string]*memcache.Item, error) {
 	for _, cb := range cw.registry.getMulti.befores {
 		cb.fn([]any{keys}, nil)
@@ -74,6 +85,7 @@ func (cw *ClientWrapper) GetMulti(keys []string) (map[string]*memcache.Item, err
 	return items, err
 }
 
+// Set writes the given item, unconditionally.
 func (cw *ClientWrapper) Set(item *memcache.Item) error {
 	for _, cb := range cw.registry.set.befores {
 		cb.fn([]any{item}, nil)
@@ -85,6 +97,8 @@ func (cw *ClientWrapper) Set(item *memcache.Item) error {
 	return err
 }
 
+// Add writes the given item, if no value already exists for its
+// key. ErrNotStored is returned if that condition is not met.
 func (cw *ClientWrapper) Add(item *memcache.Item) error {
 	for _, cb := range cw.registry.add.befores {
 		cb.fn([]any{item}, nil)
@@ -96,6 +110,8 @@ func (cw *ClientWrapper) Add(item *memcache.Item) error {
 	return err
 }
 
+// Replace writes the given item, but only if the server *does*
+// already hold data for this key
 func (cw *ClientWrapper) Replace(item *memcache.Item) error {
 	for _, cb := range cw.registry.replace.befores {
 		cb.fn([]any{item}, nil)
@@ -107,6 +123,13 @@ func (cw *ClientWrapper) Replace(item *memcache.Item) error {
 	return err
 }
 
+// CompareAndSwap writes the given item that was previously returned
+// by Get, if the value was neither modified or evicted between the
+// Get and the CompareAndSwap calls. The item's Key should not change
+// between calls but all other item fields may differ. ErrCASConflict
+// is returned if the value was modified in between the
+// calls. ErrNotStored is returned if the value was evicted in between
+// the calls.
 func (cw *ClientWrapper) CompareAndSwap(item *memcache.Item) error {
 	for _, cb := range cw.registry.compareAndSwap.befores {
 		cb.fn([]any{item}, nil)
@@ -118,6 +141,8 @@ func (cw *ClientWrapper) CompareAndSwap(item *memcache.Item) error {
 	return err
 }
 
+// Delete deletes the item with the provided key. The error ErrCacheMiss is
+// returned if the item didn't already exist in the cache.
 func (cw *ClientWrapper) Delete(key string) error {
 	for _, cb := range cw.registry.delete.befores {
 		cb.fn([]any{key}, nil)
@@ -129,6 +154,7 @@ func (cw *ClientWrapper) Delete(key string) error {
 	return err
 }
 
+// DeleteAll deletes all items in the cache.
 func (cw *ClientWrapper) DeleteAll() error {
 	for _, cb := range cw.registry.deleteAll.befores {
 		cb.fn(nil, nil)
@@ -140,6 +166,8 @@ func (cw *ClientWrapper) DeleteAll() error {
 	return err
 }
 
+// Ping checks all instances if they are alive. Returns error if any
+// of them is down.
 func (cw *ClientWrapper) Ping() error {
 	for _, cb := range cw.registry.ping.befores {
 		cb.fn(nil, nil)
@@ -151,6 +179,11 @@ func (cw *ClientWrapper) Ping() error {
 	return err
 }
 
+// Increment atomically increments key by delta. The return value is
+// the new value after being incremented or an error. If the value
+// didn't exist in memcached the error is ErrCacheMiss. The value in
+// memcached must be an decimal number, or an error will be returned.
+// On 64-bit overflow, the new value wraps around.
 func (cw *ClientWrapper) Increment(key string, delta uint64) (uint64, error) {
 	for _, cb := range cw.registry.increment.befores {
 		cb.fn([]any{key, delta}, nil)
@@ -162,6 +195,12 @@ func (cw *ClientWrapper) Increment(key string, delta uint64) (uint64, error) {
 	return newValue, err
 }
 
+// Decrement atomically decrements key by delta. The return value is
+// the new value after being decremented or an error. If the value
+// didn't exist in memcached the error is ErrCacheMiss. The value in
+// memcached must be an decimal number, or an error will be returned.
+// On underflow, the new value is capped at zero and does not wrap
+// around.
 func (cw *ClientWrapper) Decrement(key string, delta uint64) (uint64, error) {
 	for _, cb := range cw.registry.decrement.befores {
 		cb.fn([]any{key, delta}, nil)
@@ -173,6 +212,7 @@ func (cw *ClientWrapper) Decrement(key string, delta uint64) (uint64, error) {
 	return newValue, err
 }
 
+// Callback returns callbackRegistry
 func (cw *ClientWrapper) Callback() *callbackRegistry {
 	return cw.registry
 }
